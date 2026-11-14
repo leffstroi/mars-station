@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mars Station">
+<meta name="theme-color" content="#160a0e">
+<meta name="description" content="Mars Station — a top-down survival shooter written in C++ with raylib, running in your browser via WebAssembly.">
+<title>Mars Station — C++ shooter</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23d0602e'/><circle cx='35' cy='40' r='10' fill='%23a04524'/></svg>">
+<style>
+  html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#160a0e;
+    touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; overscroll-behavior:none; }
+  canvas#canvas { display:block; position:fixed; left:0; top:0; outline:none; touch-action:none; }
+  #loader { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#ffaa3c; font:bold 28px system-ui, sans-serif; letter-spacing:2px; background:#160a0e; z-index:10; }
+  #loader small { color:#ccc; font-weight:normal; font-size:14px; margin-top:12px; letter-spacing:0; }
+  #bar { width:220px; height:6px; background:#333; border-radius:3px; margin-top:18px; overflow:hidden; }
+  #bar div { height:100%; width:0; background:#ffaa3c; transition:width .2s; }
+  #rotate { display:none; position:fixed; inset:auto 0 12px 0; text-align:center; color:#fff8; font:13px system-ui; pointer-events:none; z-index:5; }
+  @media (orientation: portrait) and (pointer: coarse) { #rotate { display:block; } }
+</style>
+</head>
+<body>
+<div id="loader">MARS STATION<div id="bar"><div></div></div><small id="status">loading…</small></div>
+<div id="rotate">Tip: rotate your phone to landscape for the best view</div>
+<canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+<script>
+  // Multi-touch tracking used by the game (read from C++ via EM_ASM)
+  window.MS_TOUCHES = [];
+  (function () {
+    const cv = document.getElementById('canvas');
+    function sync(e) {
+      const r = cv.getBoundingClientRect();
+      const sx = cv.width / r.width, sy = cv.height / r.height;
+      const list = [];
+      for (let i = 0; i < e.touches.length; i++) {
+        const t = e.touches[i];
+        list.push({ id: t.identifier % 1000000, x: (t.clientX - r.left) * sx, y: (t.clientY - r.top) * sy });
+      }
+      window.MS_TOUCHES = list;
+      if (e.cancelable) e.preventDefault();
+    }
+    ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (n) {
+      cv.addEventListener(n, sync, { passive: false });
+    });
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('dblclick', function (e) { e.preventDefault(); });
+    window.addEventListener('blur', function () { window.MS_TOUCHES = []; });
+  })();
+  var Module = {
+    canvas: document.getElementById('canvas'),
+    setStatus: function (t) {
+      const m = t.match(/\((\d+(\.\d+)?)\/(\d+)\)/);
+      if (m) document.querySelector('#bar div').style.width = (100 * m[1] / m[3]) + '%';
+      document.getElementById('status').textContent = t ? t.replace(/\(.*\)/, '') : '';
+      if (!t) document.getElementById('loader').style.display = 'none';
+    },
+    onRuntimeInitialized: function () { document.getElementById('loader').style.display = 'none'; window.focus(); },
+    print: function (t) { console.log(t); },
+    printErr: function (t) { console.warn(t); }
+  };
+  window.addEventListener('keydown', function (e) {
+    if ([32, 37, 38, 39, 40].indexOf(e.keyCode) >= 0) e.preventDefault();
+  });
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>
